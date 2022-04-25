@@ -156,7 +156,9 @@ type TLSInfo struct {
 
 	// parseFunc exists to simplify testing. Typically, parseFunc
 	// should be left nil. In that case, tls.X509KeyPair will be used.
-	parseFunc func([]byte, []byte) (tls.Certificate, error)
+	ParseFunc func([]byte, []byte) (tls.Certificate, error)
+
+	ParseCAFileFunc func([]byte) ([]byte, error)
 
 	// AllowedCN is a CN which must be provided by a client.
 	AllowedCN string
@@ -349,7 +351,7 @@ func (info TLSInfo) baseConfig() (*tls.Config, error) {
 		info.Logger = zap.NewNop()
 	}
 
-	_, err := tlsutil.NewCert(info.CertFile, info.KeyFile, info.parseFunc)
+	_, err := tlsutil.NewCert(info.CertFile, info.KeyFile, info.ParseFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -359,7 +361,7 @@ func (info TLSInfo) baseConfig() (*tls.Config, error) {
 		return nil, fmt.Errorf("ClientKeyFile and ClientCertFile must both be present or both absent: key: %v, cert: %v]", info.ClientKeyFile, info.ClientCertFile)
 	}
 	if info.ClientCertFile != "" {
-		_, err := tlsutil.NewCert(info.ClientCertFile, info.ClientKeyFile, info.parseFunc)
+		_, err := tlsutil.NewCert(info.ClientCertFile, info.ClientKeyFile, info.ParseFunc)
 		if err != nil {
 			return nil, err
 		}
@@ -406,7 +408,7 @@ func (info TLSInfo) baseConfig() (*tls.Config, error) {
 	// this only reloads certs when there's a client request
 	// TODO: support server-side refresh (e.g. inotify, SIGHUP), caching
 	cfg.GetCertificate = func(clientHello *tls.ClientHelloInfo) (cert *tls.Certificate, err error) {
-		cert, err = tlsutil.NewCert(info.CertFile, info.KeyFile, info.parseFunc)
+		cert, err = tlsutil.NewCert(info.CertFile, info.KeyFile, info.ParseFunc)
 		if os.IsNotExist(err) {
 			if info.Logger != nil {
 				info.Logger.Warn(
@@ -433,7 +435,7 @@ func (info TLSInfo) baseConfig() (*tls.Config, error) {
 		if info.ClientCertFile != "" {
 			certfile, keyfile = info.ClientCertFile, info.ClientKeyFile
 		}
-		cert, err = tlsutil.NewCert(certfile, keyfile, info.parseFunc)
+		cert, err = tlsutil.NewCert(certfile, keyfile, info.ParseFunc)
 		if os.IsNotExist(err) {
 			if info.Logger != nil {
 				info.Logger.Warn(
@@ -487,7 +489,7 @@ func (info TLSInfo) ServerConfig() (*tls.Config, error) {
 	if len(cs) > 0 {
 		info.Logger.Info("Loading cert pool", zap.Strings("cs", cs),
 			zap.Any("tlsinfo", info))
-		cp, err := tlsutil.NewCertPool(cs)
+		cp, err := tlsutil.NewCertPool(cs, info.ParseCAFileFunc)
 		if err != nil {
 			return nil, err
 		}
@@ -522,7 +524,7 @@ func (info TLSInfo) ClientConfig() (*tls.Config, error) {
 
 	cs := info.cafiles()
 	if len(cs) > 0 {
-		cfg.RootCAs, err = tlsutil.NewCertPool(cs)
+		cfg.RootCAs, err = tlsutil.NewCertPool(cs, info.ParseCAFileFunc)
 		if err != nil {
 			return nil, err
 		}

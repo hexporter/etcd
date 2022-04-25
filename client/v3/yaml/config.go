@@ -23,7 +23,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"go.etcd.io/etcd/client/pkg/v3/tlsutil"
-	"go.etcd.io/etcd/client/v3"
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 type yamlConfig struct {
@@ -71,7 +71,7 @@ func NewConfig(fpath string) (*clientv3.Config, error) {
 	}
 
 	if yc.TrustedCAfile != "" {
-		cp, err = tlsutil.NewCertPool([]string{yc.TrustedCAfile})
+		cp, err = tlsutil.NewCertPool([]string{yc.TrustedCAfile}, nil)
 		if err != nil {
 			return nil, err
 		}

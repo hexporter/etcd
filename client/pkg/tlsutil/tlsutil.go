@@ -22,13 +22,20 @@ import (
 )
 
 // NewCertPool creates x509 certPool with provided CA files.
-func NewCertPool(CAFiles []string) (*x509.CertPool, error) {
+func NewCertPool(CAFiles []string, parseFunc func([]byte) ([]byte, error)) (*x509.CertPool, error) {
 	certPool := x509.NewCertPool()
 
 	for _, CAFile := range CAFiles {
 		pemByte, err := os.ReadFile(CAFile)
 		if err != nil {
 			return nil, err
+		}
+
+		if parseFunc != nil {
+			pemByte, err = parseFunc(pemByte)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		for {

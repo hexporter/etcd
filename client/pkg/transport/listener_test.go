@@ -358,7 +358,7 @@ func TestNewTransportTLSInfo(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		tt.parseFunc = fakeCertificateParserFunc(tls.Certificate{}, nil)
+		tt.ParseFunc = fakeCertificateParserFunc(tls.Certificate{}, nil)
 		trans, err := NewTransport(tt, time.Second)
 		if err != nil {
 			t.Fatalf("Received unexpected error from NewTransport: %v", err)
@@ -449,7 +449,7 @@ func TestTLSInfoParseFuncError(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		tt.info.parseFunc = fakeCertificateParserFunc(tls.Certificate{}, errors.New("fake"))
+		tt.info.ParseFunc = fakeCertificateParserFunc(tls.Certificate{}, errors.New("fake"))
 
 		if _, err = tt.info.ServerConfig(); err == nil {
 			t.Errorf("#%d: expected non-nil error from ServerConfig()", i)
@@ -487,7 +487,7 @@ func TestTLSInfoConfigFuncs(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		tt.info.parseFunc = fakeCertificateParserFunc(tls.Certificate{}, nil)
+		tt.info.ParseFunc = fakeCertificateParserFunc(tls.Certificate{}, nil)
 
 		sCfg, err := tt.info.ServerConfig()
 		if err != nil {
